@@ -1,0 +1,2 @@
+# eosaccount
+Decentralized Identity Complement
