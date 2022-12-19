@@ -10,11 +10,20 @@
                 <button @click="logout">Log Out</button>
             </div>
         </header>
-        <div class="form">
-            <div>
-                <span>Account</span>
-                <input v-model="account_name" />
-            </div>
+        <div class="search">
+            <input
+                placeholder="Search EOS Account"
+                v-model="account_name"
+                v-on:keyup.enter="searchEOSAccount"
+                :disabled="search == 1"
+            />
+        </div>
+        <div v-if="!authorized" class="account">
+            <img :src="avatar" />
+            <span><b>{{ title }}</b></span>
+            <span>{{ desc }}</span>
+        </div>
+        <div v-else class="form">
             <div>
                 <span>Nickname</span>
                 <input v-model="title" />
@@ -42,6 +51,7 @@ export default {
         return {
             authorized: false,
             auth: undefined,
+            search: 0,
             account_name: "",
             avatar: "",
             desc: "",
@@ -83,6 +93,33 @@ export default {
         logout() {
             window.localStorage.removeItem("auth");
             this.authorized = false;
+        },
+        async searchEOSAccount() {
+            let vm = this;
+            await window.rpc
+                .get_table_rows({
+                    code: window.CONTRACT_NAME,
+                    scope: window.CONTRACT_NAME,
+                    table: "accounts",
+                    lower_bound: this.account_name,
+                    limit: 1,
+                    json: true,
+                })
+                .then(function (res) {
+                    if (res.rows && res.rows.length == 1) {
+                        vm.avatar = res.rows[0].avatar;
+                        vm.desc = res.rows[0].desc;
+                        vm.title = res.rows[0].title;
+
+                        const url = JSON.parse(res.rows[0].url);
+                        vm.url.website = url.website;
+                        vm.url.telegram = url.telegram;
+                        vm.url.twitter = url.twitter;
+                        vm.url.wechat = url.wechat;
+
+                        vm.search = vm.authorized ? 1 : 0;
+                    }
+                });
         },
         async transact() {
             this.link
